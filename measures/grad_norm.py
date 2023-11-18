@@ -19,7 +19,7 @@ import torch.nn as nn
 
 import copy
 
-from . import measure
+from .measure import measure
 # from ..p_utils import get_layer_metric_array
 
 def get_layer_metric_array(net, metric, mode): 

@@ -16,7 +16,7 @@
 import torch
 import torch.nn as nn
 
-from . import measure
+from .measure import measure
 # from ..p_utils import get_layer_metric_array
 
 

@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
 
-from . import measure
+from .measure import measure
 # from ..p_utils import get_layer_metric_array
 
 def get_layer_metric_array(net, metric, mode): 

@@ -22,6 +22,8 @@ parser.add_argument('--dataset', metavar='ds', type=str, choices=['cifar10','cif
                     help='select the dataset')
 parser.add_argument('--data_path', type=str, default='~/dataset/',
                     help='the path where you store the dataset')
+parser.add_argument('--nasbench101_path', type=str, default='~/dataset/nasbench/nasbench_full.tfrecord',
+                    help='the path where you store the tfrecord')
 parser.add_argument('--cutout', type=int, default=0,
                     help='use cutout or not on input data')
 parser.add_argument('--batchsize', type=int, default=1024,
@@ -123,7 +125,7 @@ def enumerate_networks(args):
 
     if '101' in args.searchspace.lower():
         assert args.dataset == "cifar10"
-        NASBENCH_TFRECORD = '~/dataset/nasbench/nasbench_full.tfrecord'
+        NASBENCH_TFRECORD = args.nasbench101_path
         nasbench = api101.NASBench(NASBENCH_TFRECORD)
 
         def getallacc(data_dict:dict):
@@ -217,7 +219,7 @@ def enumerate_networks(args):
             elif args.metric =='grad':
                 get_grad_score(netid, network,  data, label, ce_loss, split_data=1, device='cuda')
 
-if __name__ == 'main':
+if __name__ == 'main' or __name__ == '__main__':
     enumerate_networks(args)
 
 

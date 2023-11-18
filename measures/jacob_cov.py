@@ -17,7 +17,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 
-from . import measure
+from .measure import measure
 
 
 def get_layer_metric_array(net, metric, mode): 
