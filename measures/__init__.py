@@ -214,5 +214,5 @@ def get_grad_score(network,  data, label, loss_fn, split_data=1, device='cuda', 
     score_list = enum_gradient_measure(network, device, data, label, loss_fn=loss_fn, split_data=split_data, space=space)
     
 def get_grad_score_by_measure(measure, network, data, label, loss_fn, split_data=1, device='cuda', space='cv'):
-    return run_measure(measure, network, device, data, label, loss_fn=loss_fn, split_data=split_data, space=space)
+    return run_gradient_measure(measure, network, device, data, label, loss_fn=loss_fn, split_data=split_data, space=space)
 
