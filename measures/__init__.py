@@ -46,6 +46,19 @@ def enum_gradient_measure(net, device, *args, **kwargs):
     score_list.append(sum_arr(calc_measure('synflow', net, device, *args, **kwargs)))
     return score_list
 
+def run_gradient_measure(measure, net, device, *args, **kwargs):
+    def sum_arr(arr):
+        sum = 0.
+        for i in range(len(arr)):
+            sum += torch.sum(arr[i])
+        return sum.item()
+
+    assert measure in available_measures
+    calculed = calc_measure(measure, net, device, *args, **kwargs)
+    if measure != 'jacob_cov':
+        calculed = sum_arr(calculed)
+
+    return calculed
 
 def get_ntk_n(dataloader, network, train_mode=False, num_batch=-1):
     device = torch.cuda.current_device()
@@ -200,5 +213,6 @@ def get_zenscore(model, resolution, batch_size, repeat=1, mixup_gamma=1e-2, fp16
 def get_grad_score(network,  data, label, loss_fn, split_data=1, device='cuda', space='cv'):
     score_list = enum_gradient_measure(network, device, data, label, loss_fn=loss_fn, split_data=split_data, space=space)
     
-
+def get_grad_score_by_measure(measure, network, data, label, loss_fn, split_data=1, device='cuda', space='cv'):
+    return run_measure(measure, network, device, data, label, loss_fn=loss_fn, split_data=split_data, space=space)
 
