@@ -24,6 +24,8 @@ parser.add_argument('--data_path', type=str, default='~/dataset/',
                     help='the path where you store the dataset')
 parser.add_argument('--nasbench101_path', type=str, default='~/dataset/nasbench/nasbench_full.tfrecord',
                     help='the path where you store the tfrecord')
+parser.add_argument('--nasbench201_path', type=str, default='~/dataset/nasbench/NAS-Bench-201-v1_1-096897.pth',
+                    help='the path where you store the tfrecord')
 parser.add_argument('--cutout', type=int, default=0,
                     help='use cutout or not on input data')
 parser.add_argument('--batchsize', type=int, default=1024,
@@ -36,7 +38,7 @@ parser.add_argument('--startnetid', type=int, default=0,
                     help='the index of the first network to be evaluated in the search space. currently only works for nb101')
 parser.add_argument('--manualSeed', type=int, default=0,
                     help='random seed')
-args = parser.parse_args()
+#args = parser.parse_args()
 
 
 def getmisc(args):
@@ -165,7 +167,7 @@ def enumerate_networks(args):
         
                 
     elif '201' in args.searchspace.lower():
-        api = API201('~/dataset/nasbench/NAS-Bench-201-v1_1-096897.pth', verbose=False)
+        api = API201(args.nasbench201_path, verbose=False)
 
         if args.metric in ['logdet', 'grad']:
             for i, batch in enumerate(trainloader):
@@ -220,7 +222,7 @@ def enumerate_networks(args):
                 get_grad_score(netid, network,  data, label, ce_loss, split_data=1, device='cuda')
 
 if __name__ == 'main' or __name__ == '__main__':
-    enumerate_networks(args)
+    pass
 
 
 
