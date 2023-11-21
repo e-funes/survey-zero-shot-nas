@@ -97,6 +97,35 @@ def search201(api, netid, dataset):
             train_loss/num_trails, train_acc/num_trails, test_loss/num_trails, test_acc/num_trails
     return network, [train_acc, train_acc, test_loss, test_acc]
 
+def search201_custom(api: API201, netid, dataset, hp = '12'):
+    if dataset == "cifar10":
+        dsprestr = "ori"
+    else:
+        dsprestr = "x"
+    info = api.get_more_info(netid, dataset, hp=hp)
+    results = api.query_by_index(netid, dataset, hp=hp)
+    train_loss, train_acc, test_loss, test_acc = 0, 0, 0, 0
+    for seed, result in results.items():
+        train_loss += result.get_train()["loss"]
+        train_acc += result.get_train()["accuracy"]
+        test_loss += result.get_eval(dsprestr + "-test")["loss"]
+        test_acc += result.get_eval(dsprestr + "-test")["accuracy"]
+    config = api.get_net_config(netid, dataset)
+    network = models.get_cell_based_tiny_net(config)
+    num_trails = len(results)
+    test_time = info["test-all-time"]
+    train_time = info["train-all-time"]
+    train_loss, train_acc, test_loss, test_acc = (
+        train_loss / num_trails,
+        train_acc / num_trails,
+        test_loss / num_trails,
+        test_acc / num_trails,
+    )
+    return (
+        network,
+        [train_loss, train_acc, train_time],
+        [test_loss, test_acc, test_time],
+    )
 
 def search_nats(api, netid, dataset, hpval):
     # Simulate the training of the 1224-th candidate:
