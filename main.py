@@ -127,6 +127,34 @@ def search201_custom(api: API201, netid, dataset, hp = '12'):
         [test_loss, test_acc, test_time],
     )
 
+def search101_custom(api: api101.NASBench, netid, hp = '12'):
+    fixed, comp = api.get_metrics_from_hash(netid)
+    
+    ops = fixed['module_operations']
+    adjacency = fixed['module_adjacency']
+
+    network = NB101Network((adjacency, ops))
+    
+    train_acc, test_acc, val_acc, time = 0, 0, 0, 0
+    results = comp[int(hp)]
+    for result in results:
+        time += result["final_training_time"]
+        val_acc += result["final_validation_accuracy"]
+        test_acc += result["final_test_accuracy"]
+        train_acc += result["final_train_accuracy"]
+    num_trails = len(results)
+
+    train_acc, test_acc, val_acc, time = (
+        train_acc / num_trails,
+        test_acc / num_trails,
+        val_acc / num_trails,
+        time / num_trails,
+    )
+    return (
+        network,
+        [train_acc, test_acc, val_acc, time]
+    )
+
 def search_nats(api, netid, dataset, hpval):
     # Simulate the training of the 1224-th candidate:
     # validation_accuracy, latency, time_cost, current_total_time_cost = api.simulate_train_eval(netid, dataset=dataset, hp=hpval)
