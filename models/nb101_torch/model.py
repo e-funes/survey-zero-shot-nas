@@ -173,7 +173,8 @@ class Cell(nn.Module):
                 outputs = torch.cat(out_concat, 1)
 
             if self.matrix[0, self.num_vertices-1]:
-                print("Sus1", outputs.shape, self.last_inop(tensors[0].shape))
+                print("Sus1", outputs.__class__, self.last_inop(tensors[0]).__class__)
+                print("Sus1", outputs.shape, self.last_inop(tensors[0]).shape)
                 outputs += self.last_inop(tensors[0])
                 print("Sus2", outputs.shape)
 
