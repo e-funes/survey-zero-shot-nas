@@ -157,7 +157,9 @@ class Cell(nn.Module):
                         vertex_input = vertex_input + val
                 #vertex_input = sum(fan_in)
                 #vertex_input = sum(fan_in) / len(fan_in)
+                print("outmod|start")
                 vertex_output = outmod(vertex_input)
+                print("outmod|finish")
 
                 tensors.append(vertex_output)
                 if self.matrix[t, self.num_vertices-1]:
@@ -173,6 +175,7 @@ class Cell(nn.Module):
                 outputs = torch.cat(out_concat, 1)
 
             if self.matrix[0, self.num_vertices-1]:
+                print("Sus1")
                 outputs += self.last_inop(tensors[0])
 
             #if self.matrix[0, self.num_vertices-1]:
