@@ -2,6 +2,7 @@ from typing import Dict
 from nas_201_api import NASBench201API as API201
 import models
 from models import NB101Network
+from models.nb101_torch import ModelSpec
 import datasets
 from nats_bench import create as create_nats
 import os
@@ -129,11 +130,17 @@ def search201_custom(api: API201, netid, dataset, hp = '12'):
 
 def search101_custom(api: api101.NASBench, netid, hp = '12'):
     fixed, comp = api.get_metrics_from_hash(netid)
+
+    class FakeNNArgs:
+        num_labels=1
+        num_stacks=3
+        stem_out_channels=16
+        num_modules_per_stack=3
     
     ops = fixed['module_operations']
     adjacency = fixed['module_adjacency']
 
-    network = NB101Network((adjacency, ops))
+    network = NB101Network(ModelSpec(adjacency, ops), FakeNNArgs())
     
     train_acc, test_acc, val_acc, time = 0, 0, 0, 0
     results = comp[int(hp)]

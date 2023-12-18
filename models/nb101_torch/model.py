@@ -17,72 +17,60 @@ import numpy as np
 import math
 
 from .base_ops import *
-from .model_spec import ModelSpec
 
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 class Network(nn.Module):
-    def __init__(self, spec, num_labels=10,
-                 in_channels=3, stem_out_channels=128, num_stacks=3, num_modules_per_stack=3):
-        """
-
-        Args:
-            spec: ModelSpec from nasbench, or a tuple (adjacency matrix, ops)
-            num_labels: Number of output labels.
-            in_channels: Number of input image channels.
-            stem_out_channels: Number of output stem channels. Other hidden channels are computed and depend on this
-                number.
-
-            num_stacks: Number of stacks, in every stacks the cells have the same number of channels.
-            num_modules_per_stack: Number of cells per stack.
-        """
+    def __init__(self, spec, args, searchspace=[]):
         super(Network, self).__init__()
-
-        if isinstance(spec, tuple):
-            spec = ModelSpec(spec[0], spec[1])
-
-        self.cell_indices = set()
 
         self.layers = nn.ModuleList([])
 
+        in_channels = 3
+        out_channels = args.stem_out_channels
+
         # initial stem convolution
-        out_channels = stem_out_channels
         stem_conv = ConvBnRelu(in_channels, out_channels, 3, 1, 1)
         self.layers.append(stem_conv)
 
-        # stacked cells
         in_channels = out_channels
-        for stack_num in range(num_stacks):
-            # downsample after every but the last cell
+        for stack_num in range(args.num_stacks):
             if stack_num > 0:
+                #downsample = nn.MaxPool2d(kernel_size=3, stride=2)
                 downsample = nn.MaxPool2d(kernel_size=2, stride=2)
+                #downsample = nn.AvgPool2d(kernel_size=2, stride=2)
+                #downsample = nn.Conv2d(in_channels, out_channels, kernel_size=(2, 2), stride=2)
                 self.layers.append(downsample)
 
                 out_channels *= 2
 
-            for module_num in range(num_modules_per_stack):
+            for module_num in range(args.num_modules_per_stack):
                 cell = Cell(spec, in_channels, out_channels)
                 self.layers.append(cell)
                 in_channels = out_channels
 
-                self.cell_indices.add(len(self.layers) - 1)
+        self.classifier = nn.Linear(out_channels, args.num_labels)
 
-        self.classifier = nn.Linear(out_channels, num_labels)
+        # for DARTS search
+        num_edge = np.shape(spec.matrix)[0]
+        self.arch_parameters = nn.Parameter( 1e-3*torch.randn(num_edge, len(searchspace)))
 
         self._initialize_weights()
 
-    def forward(self, preapout, outpreap=False):
+    def forward(self, x, get_ints=True):
+        ints = []
         for _, layer in enumerate(self.layers):
-            preapout = layer(preapout)
-        
-        out = torch.mean(preapout, (2, 3))
-        logits = self.classifier(out)
-        if outpreap:
-            return preapout, logits
-        else: 
-            return out, logits
+            x = layer(x)
+            ints.append(x)
+        out = torch.mean(x, (2, 3))
+        ints.append(out)
+        out = self.classifier(out)
+        if get_ints:
+            return out, ints[-1]
+        else:
+            return out
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -91,12 +79,29 @@ class Network(nn.Module):
                 m.weight.data.normal_(0, math.sqrt(2.0 / n))
                 if m.bias is not None:
                     m.bias.data.zero_()
+                pass
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+                pass
             elif isinstance(m, nn.Linear):
+                n = m.weight.size(1)
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
+                pass
+
+    def get_weights(self):
+        xlist = []
+        for m in self.modules():
+            xlist.append(m.parameters())
+        return xlist
+
+    def get_alphas(self):
+        return [self.arch_parameters]
+
+    def genotype(self):
+        return str(spec)
+
 
 class Cell(nn.Module):
     """
@@ -108,74 +113,61 @@ class Cell(nn.Module):
     def __init__(self, spec, in_channels, out_channels):
         super(Cell, self).__init__()
 
-        self.matrix = spec.matrix
-        self.num_vertices = np.shape(self.matrix)[0]
+        self.spec = spec
+        self.num_vertices = np.shape(self.spec.matrix)[0]
 
         # vertex_channels[i] = number of output channels of vertex i
-        self.vertex_channels = ComputeVertexChannels(in_channels, out_channels, self.matrix)
+        self.vertex_channels = ComputeVertexChannels(in_channels, out_channels, self.spec.matrix)
         #self.vertex_channels = [in_channels] + [out_channels] * (self.num_vertices - 1)
 
         # operation for each node
-        self.vertex_op = nn.ModuleList([Placeholder()])
+        self.vertex_op = nn.ModuleList([None])
         for t in range(1, self.num_vertices-1):
             op = OP_MAP[spec.ops[t]](self.vertex_channels[t], self.vertex_channels[t])
             self.vertex_op.append(op)
 
         # operation for input on each vertex
-        self.input_op = nn.ModuleList([Placeholder()])
+        self.input_op = nn.ModuleList([None])
         for t in range(1, self.num_vertices):
-            if self.matrix[0, t]:
+            if self.spec.matrix[0, t]:
                 self.input_op.append(Projection(in_channels, self.vertex_channels[t]))
             else:
-                self.input_op.append(Placeholder())
-
-        self.last_inop : Projection = self.input_op[self.num_vertices-1]
+                self.input_op.append(None)
 
     def forward(self, x):
         tensors = [x]
-
         out_concat = []
-        # range(1, self.num_vertices - 1),
-        for t, (inmod, outmod) in enumerate(zip(self.input_op, self.vertex_op)):
-            if 0 < t < (self.num_vertices - 1):
+        for t in range(1, self.num_vertices-1):
+            fan_in = [Truncate(tensors[src], self.vertex_channels[t]) for src in range(1, t) if self.spec.matrix[src, t]]
+            fan_in_inds = [src for src in range(1, t) if self.spec.matrix[src, t]]
 
-                fan_in = []
-                for src in range(1, t):
-                    if self.matrix[src, t]:
-                        fan_in.append(Truncate(tensors[src], torch.tensor(self.vertex_channels[t])))
+            if self.spec.matrix[0, t]:
+                fan_in.append(self.input_op[t](x))
+                fan_in_inds = [0] + fan_in_inds
 
-                if self.matrix[0, t]:
-                    l = inmod(x)
-                    fan_in.append(l)
+            # perform operation on node
+            #vertex_input = torch.stack(fan_in, dim=0).sum(dim=0)
+            vertex_input = sum(fan_in)
+            #vertex_input = sum(fan_in) / len(fan_in)
+            vertex_output = self.vertex_op[t](vertex_input)
 
-                # perform operation on node
-                #vertex_input = torch.stack(fan_in, dim=0).sum(dim=0)
-                # vertex_input = torch.zeros_like(fan_in[0])
-                vertex_input = fan_in[0]
-                if len(fan_in)>1:
-                    for val in fan_in[1:]:
-                        vertex_input = vertex_input + val
-                #vertex_input = sum(fan_in)
-                #vertex_input = sum(fan_in) / len(fan_in)
-                vertex_output = outmod(vertex_input)
+            tensors.append(vertex_output)
+            if self.spec.matrix[t, self.num_vertices-1]:
+                out_concat.append(tensors[t])
 
-                tensors.append(vertex_output)
-                if self.matrix[t, self.num_vertices-1]:
-                    out_concat.append(tensors[t])
-
-        if not out_concat:
-            assert self.matrix[0, self.num_vertices-1]
-            outputs = self.last_inop(tensors[0])
+        if not out_concat: # empty list
+            assert self.spec.matrix[0, self.num_vertices-1]
+            outputs = self.input_op[self.num_vertices-1](tensors[0])
         else:
             if len(out_concat) == 1:
                 outputs = out_concat[0]
             else:
                 outputs = torch.cat(out_concat, 1)
 
-            if self.matrix[0, self.num_vertices-1]:
-                outputs.add(self.last_inop(tensors[0]))
+            if self.spec.matrix[0, self.num_vertices-1]:
+                outputs = outputs + self.input_op[self.num_vertices-1](tensors[0])
 
-            #if self.matrix[0, self.num_vertices-1]:
+            #if self.spec.matrix[0, self.num_vertices-1]:
             #    out_concat.append(self.input_op[self.num_vertices-1](tensors[0]))
             #outputs = sum(out_concat) / len(out_concat)
 
@@ -212,9 +204,6 @@ def ComputeVertexChannels(in_channels, out_channels, matrix):
     Returns:
         list of channel counts, in order of the vertices.
     """
-    if isinstance(matrix, torch.Tensor):
-        matrix = matrix.numpy()
-
     num_vertices = np.shape(matrix)[0]
 
     vertex_channels = [0] * num_vertices
@@ -260,13 +249,4 @@ def ComputeVertexChannels(in_channels, out_channels, matrix):
     assert final_fan_in == out_channels or num_vertices == 2
     # num_vertices == 2 means only input/output nodes, so 0 fan-in
 
-    return [int(v) for v in vertex_channels]
-
-
-class Placeholder(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.a = torch.nn.Parameter(torch.randn(()))
-
-    def forward(self, x):
-        return x
+    return vertex_channels
