@@ -32,7 +32,7 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
         args = StaticArgs()
 
     def mutate(idx):
-        to_do = ["change_op"] * 4
+        to_do = (["change_op"] * 2) + (["change_struct"] * 2)
         ops_available = ['conv1x1-bn-relu', 'conv3x3-bn-relu', "maxpool3x3"]
         fixed, _ =  api_101.get_metrics_from_hash(idx)
 
@@ -69,6 +69,13 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
                 ops[p] = new_ops[0]
             else:
                 ops[p] = new_ops[1]
+        elif to_do == "change_struct":
+            i = random.randint(0, _len - 2)
+            j = random.randint(i + 1, _len - 1)
+            if adjacency[i][j] == 0:
+                adjacency[i][j] = 1
+            else:
+                adjacency[i][j] = 0
 
         # for ad in adjacency: print(ad)
         new_spec = ModelSpec(adjacency, ops)
