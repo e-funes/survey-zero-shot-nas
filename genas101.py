@@ -267,7 +267,7 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
 
 
 def instance(api_101: API101, metric, args=None, C=200, P=10, S=5, iteration=0):
-    filename = "/content/drive/MyDrive/Exp003_workspace/%s_%02d" % (metric, iteration)
+    filename = "/content/drive/MyDrive/Exp004_workspace/%s_%02d" % (metric, iteration)
 
     res = ge_nasbench_101(api_101, metric, args, C, P, S, iteration)
 

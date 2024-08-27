@@ -98,7 +98,7 @@ def search201(api, netid, dataset):
             train_loss/num_trails, train_acc/num_trails, test_loss/num_trails, test_acc/num_trails
     return network, [train_acc, train_acc, test_loss, test_acc]
 
-def search201_custom(api: API201, netid, dataset, hp = '12'):
+def search201_custom(api: API201, netid, dataset, hp = '200'):
     if dataset == "cifar10":
         dsprestr = "ori"
     else:
@@ -128,7 +128,7 @@ def search201_custom(api: API201, netid, dataset, hp = '12'):
         [test_loss, test_acc, test_time],
     )
 
-def search101_custom(api: api101.NASBench, netid, hp = '12'):
+def search101_custom(api: api101.NASBench, netid, hp = '108'):
     fixed, comp = api.get_metrics_from_hash(netid)
 
     class FakeNNArgs:
