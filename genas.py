@@ -119,12 +119,14 @@ def ge_nasbench_201(api_201: API201, metric, args=None, C=200, P=10, S=5, iterat
     while len(init_population) < C:
         idx = rand_init[len(init_population)]
         network, train_info, test_info = search201_custom(api_201, idx, args.dataset)
-        network.cuda()
-        s_timestamp = time.time()
-        s = get_grad_score_by_measure(
-            metric, network, data, label, ce_loss, split_data=1, device="cuda"
-        )
-        s_time = time.time() - s_timestamp
+        # network.cuda()
+        # s_timestamp = time.time()
+        # s = get_grad_score_by_measure(
+        #     metric, network, data, label, ce_loss, split_data=1, device="cuda"
+        # )
+        # s_time = time.time() - s_timestamp
+        s = train_info[1]
+        s_time = train_info[2]
         score_time = score_time + s_time
         candidate = cast_candidate(idx, s, s_time, train_info, test_info)
         init_population.append(candidate)
@@ -165,12 +167,14 @@ def ge_nasbench_201(api_201: API201, metric, args=None, C=200, P=10, S=5, iterat
             network, train_info, test_info = search201_custom(
                 api_201, new_idx, args.dataset
             )
-            network.cuda()
-            s_timestamp = time.time()
-            s = get_grad_score_by_measure(
-                metric, network, data, label, ce_loss, split_data=1, device="cuda"
-            )
-            s_time = time.time() - s_timestamp
+            # network.cuda()
+            # s_timestamp = time.time()
+            # s = get_grad_score_by_measure(
+            #     metric, network, data, label, ce_loss, split_data=1, device="cuda"
+            # )
+            # s_time = time.time() - s_timestamp
+            s = train_info[1]
+            s_time = train_info[2]
             score_time = score_time + s_time
             candidate = cast_candidate(new_idx, s, s_time, train_info, test_info)
             generation.append(candidate)
@@ -229,7 +233,7 @@ def ge_nasbench_201(api_201: API201, metric, args=None, C=200, P=10, S=5, iterat
 
 
 def instance(api_201: API201, metric, args=None, C=200, P=10, S=5, iteration=0):
-    filename = "/content/drive/MyDrive/Exp001_workspace/%s_%02d" % (metric, iteration)
+    filename = "/content/drive/MyDrive/Exp003_workspace/%s_%02d" % (metric, iteration)
 
     res = ge_nasbench_201(api_201, metric, args, C, P, S, iteration)
 

@@ -144,12 +144,14 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
         idx = rand_init[len(init_population)]
         # print("idx", idx)
         network, info = search101_custom(api_101, idx)
-        network.cuda()
-        s_timestamp = time.time()
-        s = get_grad_score_by_measure(
-            metric, network, data, label, ce_loss, split_data=1, device="cuda"
-        )
-        s_time = time.time() - s_timestamp
+        # network.cuda()
+        # s_timestamp = time.time()
+        # s = get_grad_score_by_measure(
+        #     metric, network, data, label, ce_loss, split_data=1, device="cuda"
+        # )
+        # s_time = time.time() - s_timestamp
+        s = info[1]
+        s_time = info[3]
         score_time = score_time + s_time
         candidate = cast_candidate(idx, s, s_time, info)
         init_population.append(candidate)
@@ -193,20 +195,22 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
             h_idx = [x["net_id"] for x in history]
             g_idx = [x["net_id"] for x in generation]
             new_idx = mutation(parent["net_id"], h_idx, g_idx)
-            network, info = search101_custom(
-                api_101, new_idx
-            )
-            network.cuda()
-            s_timestamp = time.time()
-            s = get_grad_score_by_measure(
-                metric, network, data, label, ce_loss, split_data=1, device="cuda"
-            )
+            # network, info = search101_custom(
+            #     api_101, new_idx
+            # )
+            # network.cuda()
+            # s_timestamp = time.time()
+            # s = get_grad_score_by_measure(
+            #     metric, network, data, label, ce_loss, split_data=1, device="cuda"
+            # )
+            s = info[1]
+            s_time = info[3]
             s_time = time.time() - s_timestamp
             score_time = score_time + s_time
             candidate = cast_candidate(new_idx, s, s_time, info)
             generation.append(candidate)
 
-            del network
+            # del network
             torch.cuda.empty_cache()
             gc.collect()
 
@@ -263,7 +267,7 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
 
 
 def instance(api_101: API101, metric, args=None, C=200, P=10, S=5, iteration=0):
-    filename = "/content/drive/MyDrive/Exp002_workspace/%s_%02d" % (metric, iteration)
+    filename = "/content/drive/MyDrive/Exp003_workspace/%s_%02d" % (metric, iteration)
 
     res = ge_nasbench_101(api_101, metric, args, C, P, S, iteration)
 

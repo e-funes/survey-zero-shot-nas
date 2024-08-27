@@ -111,8 +111,8 @@ def search201_custom(api: API201, netid, dataset, hp = '12'):
         train_acc += result.get_train()["accuracy"]
         test_loss += result.get_eval(dsprestr + "-test")["loss"]
         test_acc += result.get_eval(dsprestr + "-test")["accuracy"]
-    config = api.get_net_config(netid, dataset)
-    network = models.get_cell_based_tiny_net(config)
+    # config = api.get_net_config(netid, dataset)
+    network = None # models.get_cell_based_tiny_net(config)
     num_trails = len(results)
     test_time = info["test-all-time"]
     train_time = info["train-all-time"]
@@ -140,7 +140,7 @@ def search101_custom(api: api101.NASBench, netid, hp = '12'):
     ops = fixed['module_operations']
     adjacency = fixed['module_adjacency']
 
-    network = NB101Network(ModelSpec(adjacency, ops), FakeNNArgs())
+    network = None # NB101Network(ModelSpec(adjacency, ops), FakeNNArgs())
     
     train_acc, test_acc, val_acc, time = 0, 0, 0, 0
     results = comp[int(hp)]
