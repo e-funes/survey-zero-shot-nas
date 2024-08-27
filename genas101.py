@@ -203,9 +203,9 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
             # s = get_grad_score_by_measure(
             #     metric, network, data, label, ce_loss, split_data=1, device="cuda"
             # )
+            # s_time = time.time() - s_timestamp
             s = info[1]
             s_time = info[3]
-            s_time = time.time() - s_timestamp
             score_time = score_time + s_time
             candidate = cast_candidate(new_idx, s, s_time, info)
             generation.append(candidate)
