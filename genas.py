@@ -80,7 +80,7 @@ def ge_nasbench_201(api_201: API201, metric, args=None, C=200, P=10, S=5, iterat
         return idx
 
     args = StaticArgs()
-    imgsize, ce_loss, trainloader, testloader = getmisc(args)
+    # imgsize, ce_loss, trainloader, testloader = getmisc(args)
 
     def cast_candidate(idx, s, s_time, train_info, test_info, epochs=12):
         return {
@@ -102,11 +102,11 @@ def ge_nasbench_201(api_201: API201, metric, args=None, C=200, P=10, S=5, iterat
         r["trained"] = True
         return r
 
-    for i, batch in enumerate(trainloader):
-        data, label = batch[0], batch[1]
-        data, label = data.cuda(), label.cuda()
-        if iteration <= i:
-            break
+    # for i, batch in enumerate(trainloader):
+    #     data, label = batch[0], batch[1]
+    #     data, label = data.cuda(), label.cuda()
+    #     if iteration <= i:
+    #         break
 
     init_population = []
     generations = []

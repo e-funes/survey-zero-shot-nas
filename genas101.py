@@ -105,7 +105,7 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
 
 
     args = StaticArgs()
-    imgsize, ce_loss, trainloader, testloader = getmisc(args)
+    # imgsize, ce_loss, trainloader, testloader = getmisc(args)
 
     def cast_candidate(idx, s, s_time, info, epochs=12):
         return {
@@ -125,11 +125,11 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
         r["trained"] = True
         return r
 
-    for i, batch in enumerate(trainloader):
-        data, label = batch[0], batch[1]
-        data, label = data.cuda(), label.cuda()
-        if iteration <= i:
-            break
+    # for i, batch in enumerate(trainloader):
+    #     data, label = batch[0], batch[1]
+    #     data, label = data.cuda(), label.cuda()
+    #     if iteration <= i:
+    #         break
 
     init_population = []
     generations = []
@@ -156,9 +156,9 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
         candidate = cast_candidate(idx, s, s_time, info)
         init_population.append(candidate)
 
-        del network
-        torch.cuda.empty_cache()
-        gc.collect()
+        # del network
+        # torch.cuda.empty_cache()
+        # gc.collect()
 
 
     init_population = sorted(init_population, key=lambda x: x["score"], reverse=True)
@@ -211,8 +211,8 @@ def ge_nasbench_101(api_101: API101, metric, args=None, C=200, P=10, S=5, iterat
             generation.append(candidate)
 
             # del network
-            torch.cuda.empty_cache()
-            gc.collect()
+            # torch.cuda.empty_cache()
+            # gc.collect()
 
         chosen_ind = max(generation, key=lambda i: i["score"])  # get highest score
 
